@@ -169,6 +169,23 @@
   backdrop-filter: saturate(180%) blur(12px);
 }
 
+/* Brand logo: larger, cleaner, more prominent */
+.md-header__button.md-logo {
+  margin: 0 0.3rem 0 0.1rem;
+  padding: 0.12rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--doc-accent-violet) 14%, transparent);
+}
+
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  width: auto;
+  height: 2.15rem;
+  max-height: 2.15rem;
+  border-radius: 0.4rem;
+  box-shadow: 0 1px 6px color-mix(in srgb, var(--md-default-fg-color) 25%, transparent);
+}
+
 /* Hero — home only */
 .doc-hero {
   margin: 0 -0.8rem 2rem;
@@ -268,6 +285,12 @@
     width: 100%;
     margin: 0.35rem 0 0;
     text-align: center;
+  }
+
+  .md-header__button.md-logo img,
+  .md-header__button.md-logo svg {
+    height: 1.8rem;
+    max-height: 1.8rem;
   }
 
 }
