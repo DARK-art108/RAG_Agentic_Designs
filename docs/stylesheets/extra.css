@@ -1,0 +1,38 @@
+/* Polished accents on top of Material theme */
+:root {
+  --md-typeset-a-color: var(--md-accent-fg-color);
+}
+
+.md-header {
+  backdrop-filter: saturate(180%) blur(12px);
+}
+
+.md-typeset h1 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.md-typeset .admonition.interview {
+  border-color: rgb(103, 58, 183);
+}
+
+.md-typeset .admonition.interview > .admonition-title {
+  background-color: color-mix(in srgb, rgb(103, 58, 183) 12%, transparent);
+}
+
+/* Hero band on home */
+.doc-hero {
+  margin: 0 -0.8rem 2rem;
+  padding: 2.5rem 1.5rem 2rem;
+  border-radius: 0.6rem;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--md-primary-fg-color) 8%, transparent) 0%,
+    color-mix(in srgb, var(--md-accent-fg-color) 6%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--md-primary-fg-color) 15%, transparent);
+}
+
+.doc-hero h1 {
+  margin-top: 0;
+}

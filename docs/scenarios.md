@@ -20,7 +20,7 @@ This is a Compilation of various complex RAG, Agentic Design, Harness Patterns b
 
 ---
 
-## 1. RAG latency — from 15s down to &lt;1s
+## 1. RAG latency — from 15s down to <1s
 
 This is the most common senior-level RAG question. Interviewers want to see that you can systematically diagnose the bottleneck rather than blindly throwing hardware at it.
 
@@ -56,7 +56,7 @@ results = await asyncio.gather(
 reranked = cross_encoder.rank(query, merge(results))[:5]
 ```
 
-**HNSW index tuning** — Tune `ef_construction=200`, `M=16` at index-build time. At query time use `ef_search=50–100`. Use Product Quantisation (PQ) to compress vectors by 8–32× with &lt;5% recall loss.
+**HNSW index tuning** — Tune `ef_construction=200`, `M=16` at index-build time. At query time use `ef_search=50–100`. Use Product Quantisation (PQ) to compress vectors by 8–32× with <5% recall loss.
 
 ```python
 # Qdrant example
@@ -284,7 +284,7 @@ class AgentHarness:
 Long-running agents accumulate conversation history that eventually exceeds the context window. Three strategies:
 
 1. **Sliding window** — keep only the last N turns. Simple but loses early context; good for conversational agents.  
-2. **Summarisation compression** — when history &gt; 80% of context limit, run a cheap LLM to summarise older turns into a ~200-token digest; prepend digest to new context.  
+2. **Summarisation compression** — when history > 80% of context limit, run a cheap LLM to summarise older turns into a ~200-token digest; prepend digest to new context.  
 3. **Memory retrieval (MemGPT pattern)** — move old messages to external memory (vector DB); at each step retrieve top-k relevant memories and inject them; full recall, higher latency.
 
 ```python
@@ -309,7 +309,7 @@ def compress_history(messages, token_limit=6000):
 
 | Technique | Notes |
 |-----------|--------|
-| **LLMLingua / LLMLingua-2** | Token-level compression via small LM perplexity; drops low-information tokens; ~3–5× compression, often &lt;5% accuracy drop. |
+| **LLMLingua / LLMLingua-2** | Token-level compression via small LM perplexity; drops low-information tokens; ~3–5× compression, often <5% accuracy drop. |
 | **Selective context** | Remove sentences with low self-information (high n-gram overlap); fast, no LLM call. |
 | **Hierarchical summarisation** | Summarise blocks, then summarise summaries; preserves local coherence. |
 | **Key-value cache reuse (prompt caching)** | Stable system prompt + document prefix cached at provider; only new turns sent. |
@@ -355,13 +355,13 @@ Multi-agent systems decompose complex tasks across specialised agents. Three coo
 
 | Metric | What it measures | Tool | Target |
 |--------|------------------|------|--------|
-| Faithfulness | Answer grounded in context? No hallucinations? | RAGAS | &gt; 0.9 |
-| Answer relevancy | Does answer address the question? | RAGAS | &gt; 0.85 |
-| Context precision | Fraction of retrieved chunks relevant | RAGAS | &gt; 0.8 |
-| Context recall | Fraction of relevant info retrieved | RAGAS | &gt; 0.75 |
-| MRR / NDCG | Ranking quality | Custom | MRR &gt; 0.7 |
-| Latency P95 | End-to-end response time | Prometheus | &lt; 2 s |
-| Cost per query | LLM + embedding + DB | Custom | &lt; $0.01 |
+| Faithfulness | Answer grounded in context? No hallucinations? | RAGAS | > 0.9 |
+| Answer relevancy | Does answer address the question? | RAGAS | > 0.85 |
+| Context precision | Fraction of retrieved chunks relevant | RAGAS | > 0.8 |
+| Context recall | Fraction of relevant info retrieved | RAGAS | > 0.75 |
+| MRR / NDCG | Ranking quality | Custom | MRR > 0.7 |
+| Latency P95 | End-to-end response time | Prometheus | < 2 s |
+| Cost per query | LLM + embedding + DB | Custom | < $0.01 |
 
 **RAGAS** is the standard framework. Mention building an **offline golden dataset** (100–500 Q&A pairs) and **regression tests** on every pipeline change.
 
@@ -404,8 +404,8 @@ Multi-agent systems decompose complex tasks across specialised agents. Three coo
 | HNSW params | M=16, ef_construct=200, ef_search=50–100 |
 | RRF constant | k=60 |
 | Compaction trigger | 75–80% of context limit |
-| RAGAS faithfulness target | &gt; 0.90 |
-| Latency budget (P95) | &lt; 2 s with streaming |
+| RAGAS faithfulness target | > 0.90 |
+| Latency budget (P95) | < 2 s with streaming |
 | ReAct max steps | 10–20 (add budget_forced_halt) |
 | Embedding models | text-embedding-3-small (1536d), BGE-M3, E5-Large |
 | Vector DBs | Qdrant (self-host), Pinecone (managed), Weaviate, pgvector |
@@ -574,7 +574,7 @@ if not verify_numeric_claims(response, chunks):
 ```
 Document Update → Kafka (doc_updates) → Flink/Spark Streaming
   → chunking (semantic, 512t) → embedding (batched, GPU) → Qdrant upsert (sharded by namespace)
-Lag target: &lt; 30 s doc-to-searchable
+Lag target: < 30 s doc-to-searchable
 ```
 
 **Serving path — 100 ms budget (example breakdown)**
@@ -610,7 +610,7 @@ Lag target: &lt; 30 s doc-to-searchable
 
 | Model | Isolation | Cost | Compliance | Best for |
 |-------|-----------|------|------------|----------|
-| Namespace + filter | Logical | $ | Low | SMB, &lt;1000 tenants |
+| Namespace + filter | Logical | $ | Low | SMB, <1000 tenants |
 | Collection per tenant | Logical + physical index | $$ | Medium | Mid-market |
 | Dedicated cluster | Full infra | $$$ | SOC2/HIPAA | Regulated enterprise |
 
@@ -738,7 +738,7 @@ else:
     prompt = SYNTHESIS_PROMPT.format(facts=retrieved_facts)
 ```
 
-**Source authority ranking:** peer-reviewed &gt; government &gt; major news &gt; blog; surface authority differential when conflicts exist.
+**Source authority ranking:** peer-reviewed > government > major news > blog; surface authority differential when conflicts exist.
 
 ---
 
@@ -967,13 +967,13 @@ Example Cypher-style approach: match approver for budget, then `REPORTS_TO` mana
 | 3 | RAGAS baseline | Scores |
 | 4 | MRR@5, NDCG@10, P@k | Retrieval benchmark |
 | 5 | LLM-as-judge (helpfulness, accuracy, safety) | Judge scores |
-| 6–7 | GitHub Actions — block if faithfulness drops &gt;2% | CI gate |
+| 6–7 | GitHub Actions — block if faithfulness drops >2% | CI gate |
 | 8–9 | Prod log + 1% human sample | Review loop |
 | 10 | A/B harness | Experiments |
 | 11–12 | Grafana/Datadog dashboard | Ops visibility |
 | 13–14 | Eval playbook | Docs |
 
-**Maturity signal:** Inter-annotator agreement (e.g. Cohen's κ &gt; 0.7).
+**Maturity signal:** Inter-annotator agreement (e.g. Cohen's κ > 0.7).
 
 ---
 
@@ -1055,7 +1055,7 @@ This part adds **new** complex questions with **scenario framing**, **ideal reas
 |-------|----------------|---------------------|
 | **Input** | Toxicity, PII exfil attempts, jailbreak | Classifiers; allowlists for outbound domains |
 | **Retrieval** | Injection in docs | Sanitise ingest; delimiters; never elevate retrieved text to system |
-| **Tool** | Schema validation; capability matrix | Pydantic; OAuth scopes per tool; MFA for refunds &gt;$X |
+| **Tool** | Schema validation; capability matrix | Pydantic; OAuth scopes per tool; MFA for refunds >$X |
 | **Output** | Policy, hallucination, brand | NLI grounding; regex + semantic judge; red-team prompts |
 | **Org** | Audit, escalations | SIEM alerts on anomaly tool volume |
 
@@ -1067,7 +1067,7 @@ This part adds **new** complex questions with **scenario framing**, **ideal reas
 
 **Scenario:** Ship weekly prompt/model changes; prevent regressions on **safety** and **privacy**.
 
-**Design:** Curated **attack suite** (injection strings, role escapes, data exfil templates); **LLM-as-judge** + **deterministic** checks; **block merge** if attack success rate &gt; baseline + epsilon; **canary** in prod with automatic rollback on safety KPI drift.
+**Design:** Curated **attack suite** (injection strings, role escapes, data exfil templates); **LLM-as-judge** + **deterministic** checks; **block merge** if attack success rate > baseline + epsilon; **canary** in prod with automatic rollback on safety KPI drift.
 
 ---
 
@@ -1095,7 +1095,7 @@ This part adds **new** complex questions with **scenario framing**, **ideal reas
 
 ### Q9 — HLD: Human-in-the-loop (HITL) escalation graph
 
-**Triggers:** Irreversible tool; confidence &lt; τ; policy engine uncertainty; user frustration signal from CX models.
+**Triggers:** Irreversible tool; confidence < τ; policy engine uncertainty; user frustration signal from CX models.
 
 **Flow:** Agent suspends → writes **structured escalation packet** (goal, attempts, evidence IDs) → human UI → human edits **plan** or **answers** → resume from checkpoint with **immutable** human decision logged.
 
