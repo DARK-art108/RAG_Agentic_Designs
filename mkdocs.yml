@@ -88,5 +88,10 @@ nav:
       - "Ch.4 Memory & context": guide/part-ii/chapter-04-memory.md
       - "Ch.5 Advanced + SPAR": guide/part-ii/chapter-05-advanced.md
   - Part III — HLD / Guardrails: guide/part-iii.md
+  - Reference architectures:
+      - Overview: guide/design-patterns/index.md
+      - Advanced multi-agent RAG (scale): guide/design-patterns/advanced-multi-agent-rag.md
+      - Pharma clinical intelligence: guide/design-patterns/pharma-clinical-platform.md
+      - Banking LLMOps RAG: guide/design-patterns/banking-llmops-rag.md
 
 copyright: Copyright &copy; Ritesh Yadav — Advanced ML / LLM interview preparation

@@ -50,5 +50,11 @@ Staff-level extensions: compliance-aware RAG, RAG gateway shape, guardrail layer
 
 ---
 
+### [:octicons-graph-24: Reference architectures](design-patterns/index.md)
+
+Diagram-backed explainers for **multi-agent RAG at millions of documents**, a **pharma / clinical intelligence** stack (modalities + GraphRAG + regulated ops), and **banking LLMOps RAG** (semantic cache, rerankers, multi-region Kubernetes). Good anchor pages when an interviewer asks “draw the production system.”
+
+---
+
 !!! note "Source manuscript"
     The canonical Markdown manuscript also lives at the repo root as `Scenarios.md`. The **MkDocs site** uses the split files under `docs/guide/` for navigation and faster loading.

@@ -48,6 +48,14 @@ Compiled by **Ritesh Yadav**.
 
     [:octicons-arrow-right-24: Open Part III](guide/part-iii.md)
 
+- :material-chart-timeline-variant: **Reference architectures**
+
+    ---
+
+    Diagram-backed pages: **multi-agent RAG at scale**, **pharma / clinical intelligence**, and **banking LLMOps RAG** — patterns you can whiteboard in senior interviews.
+
+    [:octicons-arrow-right-24: Open architectures](guide/design-patterns/index.md)
+
 </div>
 
 !!! tip "How to use this site"

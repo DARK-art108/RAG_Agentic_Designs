@@ -294,3 +294,38 @@
   }
 
 }
+
+/* Architecture diagrams — readable on desktop & mobile */
+.md-typeset figure {
+  margin: 1.75rem 0;
+}
+
+.md-typeset img.doc-diagram-img {
+  display: block;
+  width: 100%;
+  max-width: min(100%, 96rem);
+  height: auto;
+  margin: 0 auto;
+  border-radius: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--md-default-fg-color) 14%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--md-default-fg-color) 10%, transparent),
+    0 12px 40px color-mix(in srgb, var(--md-default-fg-color) 8%, transparent);
+}
+
+[data-md-color-scheme="slate"] .md-typeset img.doc-diagram-img {
+  border-color: color-mix(in srgb, var(--md-default-fg-color) 22%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent),
+    0 16px 42px color-mix(in srgb, #000 45%, transparent);
+}
+
+.md-typeset figure figcaption {
+  margin-top: 0.65rem;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--md-default-fg-color) 72%, transparent);
+  text-align: center;
+  max-width: 52rem;
+  margin-inline: auto;
+}
