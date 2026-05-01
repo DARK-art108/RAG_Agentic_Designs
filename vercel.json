@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pip install -r requirements-docs.txt && mkdocs build --strict",
+  "installCommand": "python3 -m venv .venv && .venv/bin/python -m pip install --upgrade pip && .venv/bin/pip install -r requirements-docs.txt",
+  "buildCommand": ".venv/bin/mkdocs build --strict",
   "outputDirectory": "site",
-  "installCommand": "pip install -r requirements-docs.txt",
   "framework": null,
   "cleanUrls": true,
   "trailingSlash": false

@@ -1,36 +1,205 @@
-/* Polished accents on top of Material theme */
+/* ─── Theme tokens: readability & emphasis ─── */
 :root {
-  --md-typeset-a-color: var(--md-accent-fg-color);
+  --doc-accent-violet: #7c4dff;
+  --doc-accent-teal: #009688;
+  --doc-accent-amber: #ffb300;
+  --doc-accent-rose: #ec407a;
+  --doc-surface-quote: color-mix(in srgb, var(--doc-accent-teal) 12%, transparent);
+  --doc-surface-important: color-mix(in srgb, var(--doc-accent-violet) 11%, transparent);
 }
 
-.md-header {
-  backdrop-filter: saturate(180%) blur(12px);
+[data-md-color-scheme="slate"] {
+  --doc-surface-quote: color-mix(in srgb, var(--doc-accent-teal) 18%, transparent);
+  --doc-surface-important: color-mix(in srgb, var(--doc-accent-violet) 15%, transparent);
+}
+
+.md-typeset {
+  font-size: 0.92rem;
+  line-height: 1.72;
 }
 
 .md-typeset h1 {
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
+  margin-bottom: 0.85em;
+  padding-bottom: 0.35em;
+  border-bottom: 2px solid color-mix(in srgb, var(--md-primary-fg-color) 35%, transparent);
 }
 
-.md-typeset .admonition.interview {
-  border-color: rgb(103, 58, 183);
+.md-typeset h2 {
+  font-weight: 650;
+  margin-top: 1.65em;
+  padding-left: 0.65rem;
+  border-left: 4px solid var(--doc-accent-violet);
 }
 
-.md-typeset .admonition.interview > .admonition-title {
-  background-color: color-mix(in srgb, rgb(103, 58, 183) 12%, transparent);
+.md-typeset h3 {
+  font-weight: 600;
+  color: color-mix(in srgb, var(--md-default-fg-color) 92%, var(--doc-accent-teal));
 }
 
-/* Hero band on home */
+.md-typeset a {
+  font-weight: 500;
+}
+
+/* Tables: zebra + strong header */
+.md-typeset table:not([class]) {
+  display: table;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border-radius: 0.45rem;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--md-default-fg-color) 12%, transparent);
+}
+
+.md-typeset table:not([class]) th {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--doc-accent-violet) 28%, transparent) 0%,
+    color-mix(in srgb, var(--doc-accent-teal) 22%, transparent) 100%
+  );
+  color: #1e1033;
+  font-weight: 600;
+  font-size: 0.82em;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.65rem 0.85rem;
+  border-bottom: none;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) th {
+  color: #f5f0ff;
+}
+
+.md-typeset table:not([class]) td {
+  padding: 0.55rem 0.85rem;
+  vertical-align: top;
+}
+
+.md-typeset table:not([class]) tr:nth-child(even) td {
+  background-color: color-mix(in srgb, var(--md-default-fg-color) 4%, transparent);
+}
+
+.md-typeset table:not([class]) tbody tr:hover td {
+  background-color: color-mix(in srgb, var(--doc-accent-teal) 10%, transparent);
+}
+
+/* Inline emphasis used heavily in interviews */
+.md-typeset strong {
+  color: color-mix(in srgb, var(--md-default-fg-color) 85%, var(--doc-accent-amber));
+  font-weight: 650;
+}
+
+[data-md-color-scheme="slate"] .md-typeset strong {
+  color: color-mix(in srgb, #fff 88%, var(--doc-accent-amber));
+}
+
+/* “Interview dialogue” labels — Situation / Interviewer / You */
+.md-typeset p:first-child strong {
+  letter-spacing: 0.01em;
+}
+
+/* Code blocks */
+.md-typeset div.highlight {
+  border-radius: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--doc-accent-violet) 28%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--md-default-fg-color) 8%, transparent);
+}
+
+.md-typeset div.highlight pre {
+  margin: 0;
+}
+
+.md-typeset code {
+  font-feature-settings: "liga" 0;
+}
+
+/* Admonitions: clearer hierarchy & color cues */
+.md-typeset .admonition {
+  border-radius: 0.45rem;
+  border-width: 0 0 0 4px;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--md-default-fg-color) 8%, transparent);
+}
+
+.md-typeset .admonition.abstract {
+  border-color: var(--doc-accent-violet);
+  background-color: var(--doc-surface-important);
+}
+
+.md-typeset .admonition.tip {
+  border-color: var(--doc-accent-teal);
+  background-color: var(--doc-surface-quote);
+}
+
+.md-typeset .admonition.note {
+  border-color: color-mix(in srgb, var(--doc-accent-violet) 70%, var(--doc-accent-teal));
+}
+
+.md-typeset .admonition.success {
+  border-color: #66bb6a;
+}
+
+.md-typeset .admonition.warning {
+  border-color: var(--doc-accent-amber);
+}
+
+.md-typeset .admonition.danger {
+  border-color: #ef5350;
+}
+
+.md-typeset .admonition-title {
+  font-weight: 700;
+}
+
+/* Blockquotes — explanatory asides */
+.md-typeset blockquote {
+  border-left: 4px solid var(--doc-accent-teal);
+  border-radius: 0 0.35rem 0.35rem 0;
+  background: color-mix(in srgb, var(--doc-accent-teal) 7%, transparent);
+  padding: 0.35rem 0.85rem 0.35rem 1rem;
+}
+
+/* Sidebar TOC polish */
+.md-nav__link--active {
+  font-weight: 600;
+}
+
+/* Header */
+.md-header {
+  backdrop-filter: saturate(180%) blur(12px);
+}
+
+/* Emoji logo (see overrides/partials/logo.html) */
+.md-logo__emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.85rem;
+  line-height: 1;
+}
+
+/* Hero — home only */
 .doc-hero {
   margin: 0 -0.8rem 2rem;
   padding: 2.5rem 1.5rem 2rem;
-  border-radius: 0.6rem;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--md-primary-fg-color) 8%, transparent) 0%,
-    color-mix(in srgb, var(--md-accent-fg-color) 6%, transparent) 100%
-  );
-  border: 1px solid color-mix(in srgb, var(--md-primary-fg-color) 15%, transparent);
+  border-radius: 0.65rem;
+  background:
+    radial-gradient(
+      ellipse 120% 90% at 100% 0%,
+      color-mix(in srgb, var(--doc-accent-violet) 22%, transparent) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 90% 80% at 0% 100%,
+      color-mix(in srgb, var(--doc-accent-teal) 18%, transparent) 0%,
+      transparent 50%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--md-primary-fg-color) 10%, transparent) 0%,
+      color-mix(in srgb, var(--md-accent-fg-color) 8%, transparent) 100%
+    );
+  border: 1px solid color-mix(in srgb, var(--doc-accent-violet) 35%, transparent);
 }
 
 .doc-hero h1 {

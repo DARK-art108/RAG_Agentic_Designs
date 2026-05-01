@@ -431,7 +431,13 @@ Every scenario below is drawn from real production incidents, system design inte
 
 ### Scenario 1 — RAG returns stale legal clauses *(LegalTech / Fintech — Hard)*
 
-**Situation:** Senior engineer at a LegalTech startup. RAG chatbot answers contract questions. Client reports the bot cited a GDPR clause amended 8 months ago — old version still in the vector DB. CEO escalation.
+**Situation**
+
+You are a senior engineer at a **LegalTech** company. The product is an internal-facing assistant that answers questions about **contracts, policies, and regulations** (GDPR, DPAs, vendor terms). Lawyers and customer-success teams paste questions in natural language; the app retrieves chunks from a **vector database** and an LLM drafts an answer with citations.
+
+The retrieval corpus was built months earlier by batch-ingesting PDFs and wiki pages. When regulations or templates change, **someone occasionally uploads a new PDF**, but there was **no formal “retirement” process** for older material—new chunks were added next to old ones. Embeddings for both versions can look similar (same topic, overlapping wording), so the model sometimes pulls **the outdated clause** because it still matches the query semantically.
+
+A large enterprise customer **audits** an answer and discovers the bot cited a **GDPR article that was superseded eight months ago**. For them this is not a small UX glitch—it touches **compliance, audit trails, and liability**. The issue is escalated to your **CEO**, and you are asked *today* what broke and how you stop it from happening again.
 
 **Interviewer:** What went wrong architecturally, and what's your immediate triage plan?
 
@@ -492,7 +498,13 @@ Golden suite (~50 questions) where correct answers **changed across versions**; 
 
 ### Scenario 2 — Embedding model migration at scale *(E-commerce / FAANG — Hard)*
 
-**Situation:** 50M product embeddings in Pinecone with `text-embedding-ada-002`. New model `text-embedding-3-large` is ~20% better. VP wants migration. **Zero downtime.**
+**Situation**
+
+You support **search and recommendations** for a large e-commerce catalog: titles, descriptions, attributes, and reviews are embedded into vectors and stored in **Pinecone** (or equivalent). The live index holds about **50 million vectors**, built with OpenAI’s legacy **`text-embedding-ada-002`** model.
+
+Product and ML leadership ran offline benchmarks and found that **`text-embedding-3-large`** (or another newer embedding) improves **recall@k** and semantic relevance by a meaningful margin—roughly **~20%** on internal golden queries. The VP wants the better model **in production**, but the business cannot afford **hours of broken search**, **empty results**, or **wrong rankings** during a migration.
+
+So you face a classic constraint: **all IDs must keep resolving**, **traffic must stay up**, new products must remain embeddable **during** the migration, and you need a **safe rollback** if metrics regress after cutover. The interviewer is testing whether you understand **blue–green indexes**, **dual-write**, **validation gates**, and **feature-flagged cutover**—not “re-embed everything in place overnight.”
 
 **Interviewer:** How do you migrate 50M vectors with zero downtime?
 
@@ -527,7 +539,13 @@ FEATURE_FLAGS['embedding_index'] = 'v2'  # LaunchDarkly / Flagsmith
 
 ### Scenario 3 — RAG hallucinating numbers in finance reports *(Fintech / Banking — Hard)*
 
-**Situation:** Bank RAG over quarterly reports. Analyst sees plausible-but-wrong revenue (e.g. $2.3B vs $2.1B).
+**Situation**
+
+A **bank or asset-management** team deployed internal RAG over **10-Q / 10-K PDFs**, earnings slides, and MD&A sections so analysts can ask questions in chat (“What was revenue last quarter?”, “How did net interest margin change?”). Retrieval returns chunks that *look* relevant—the right company, the right quarter, tables nearby—so stakeholders trust the answers.
+
+An analyst notices that the model stated revenue as **$2.3B** when the filing actually says **$2.1B**. The scary part is that the answer **sounds authoritative**: correct units, plausible rounding, no obvious “I don’t know.” After investigation you confirm that **the correct figure exists somewhere in the corpus**, yet the model still emitted the wrong number—this is not simply “missing context”; it is **miscomposition** of numeric evidence.
+
+Downstream, wrong numbers could inform **internal models, executive summaries, or client-facing drafts**, so risk and compliance are involved. The question is **why** numeric hallucinations persist even when documents contain the truth, and **what architecture** (chunking, structured extraction, tools, verification) prevents them.
 
 **Interviewer:** Why happens even when figures exist in documents?
 
@@ -562,6 +580,14 @@ if not verify_numeric_claims(response, chunks):
 ## Chapter 2 — System design scenarios
 
 ### Scenario 4 — Design RAG for 10M daily users *(Big Tech / FAANG — Senior)*
+
+**Situation**
+
+Imagine you own **in-product help or knowledge search** for a consumer super-app: tens of millions of **daily active users**, tens of millions of **documents** (help articles, policies, community posts, structured FAQs). Users expect answers **as fast as a web search**—product leadership has advertised a **~100 ms P99 end-to-end SLA** for the *full* experience (not just vector search).
+
+Documents change often (campaigns, regional rules, feature launches), so leadership wants **near–real-time freshness**—old stale answers are a support-ticket driver. At the same time, finance caps incremental infra + LLM spend at roughly **$50K/month** for this surface.
+
+This scenario forces you to **negotiate reality**: pure “retrieve 50 chunks + GPT-4 full context” cannot meet **100 ms P99**. You must explain **what ships synchronously**, what is **cached**, what is **async/streamed**, how **ingestion** scales, and how you **prove** you hit latency and cost targets.
 
 **Constraints:** 10M DAU, **100 ms P99** latency SLA, **50M documents**, near-real-time updates, **$50K/month** budget.
 
@@ -602,7 +628,11 @@ Lag target: &lt; 30 s doc-to-searchable
 
 ### Scenario 5 — Multi-tenant RAG with data isolation *(SaaS / B2B — Hard)*
 
-**Situation:** RAG for 500 enterprises. Fortune 500 demands **no mixing** of vectors across tenants.
+**Situation**
+
+You sell a **B2B SaaS assistant** that indexes each customer’s private documents—contracts, HR policies, runbooks, ticket exports—and answers employee questions. You have **hundreds of enterprises** on shared infrastructure. Most tenants are fine with standard SaaS controls, but a **Fortune 500** prospect’s security review asks explicitly: *“Demonstrate that our embeddings and metadata cannot appear in another tenant’s retrieval results—even under bug conditions.”*
+
+That requirement goes beyond polite promises: it implies thinking about **failure modes** (bad filter, wrong API key, broken namespace), **compliance narratives** (SOC 2, sometimes HIPAA), and **commercial packaging** (shared vs isolated indexes affect **margin**). Sales wants “full isolation,” engineering wants **cost efficiency**, and you must articulate **tiered isolation models** and when each is appropriate.
 
 **Interviewer:** Isolation options and trade-offs?
 
@@ -638,7 +668,13 @@ def get_vector_client(tenant_id: str) -> QdrantClient:
 
 ### Scenario 6 — Agent sent 10,000 emails by mistake *(Enterprise SaaS — Hard)*
 
-**Situation:** Email-drafting agent; validation bug → 10k drafts **sent** to real customers over ~2 h.
+**Situation**
+
+Your company shipped an **AI assistant for customer-success teams** that can **draft outreach emails** based on CRM context (renewals, outages, onboarding milestones). In staging, the tool wrote drafts into a queue for humans to approve. In production, an integration mistake—or an overly permissive flag—meant the **`send_email`** action was wired to the **live transactional provider**, not the sandbox.
+
+Over roughly **two hours**, the agent (or a scheduled batch job invoking it) executed **~10,000 real sends**: customers received partially personalized messages that may be **wrong, duplicated, or inappropriate**. Support volume spikes; legal and PR get involved; leadership asks for **root cause**, **immediate containment**, and **guardrails** so “AI speed” never again translates into **irreversible blast radius**.
+
+This scenario is about **classifying tool risk**, **human approvals**, **rate limits**, **dry-run defaults**, and **operational kill switches**—not about improving prompt wording alone.
 
 **Interviewer:** How do you prevent this class of bug?
 
@@ -676,7 +712,13 @@ class AgentHarness:
 
 ### Scenario 7 — Agent loops endlessly on coding task *(AI Dev Tools — Medium)*
 
-**Situation:** “Fix all failing tests”; 47 failures → agent oscillates on same file; 200 tool calls → context limit.
+**Situation**
+
+You are building an **AI coding agent** inside an IDE or CI bot. A user triggers **“fix all failing tests”** on a large repo. There are **47 failing tests** spanning multiple modules—not one trivial typo. The agent follows a generic **ReAct-style loop**: read files, patch, run tests, read logs, repeat.
+
+Because there is **no explicit plan or progress metric**, the agent keeps **re-editing the same hot files**, toggling fixes that break other tests, or chasing misleading stack traces. Observability shows **~200 tool calls** over a long session; latency and cost balloon, and eventually the **context window fills** with noisy logs. From the user’s perspective the agent looks **stuck** even though it appears “busy.”
+
+The interviewer wants to hear how you introduce **hierarchical task decomposition**, **per-subgoal budgets**, **detectors for lack of progress**, and **escalation**—the same structures human engineering leads use for incidents.
 
 **Interviewer:** Root cause and architectural fix?
 
@@ -709,7 +751,13 @@ class CodingAgentHarness:
 
 ### Scenario 8 — Research agent returns contradictory facts *(AI Research / Media — Medium)*
 
-**Situation:** Web search + internal RAG; agent presents conflicting claims as equally true.
+**Situation**
+
+You operate a **research copilot** used by analysts or journalists. It combines **live web search**, **news APIs**, and **internal PDF / wiki RAG**. Different sources legitimately disagree: preprints vs later retractions, rumor-stage reporting vs official filings, or two vendors claiming incompatible market-share stats.
+
+The failure mode here is subtle: the model **smoothly narrates** a single story and picks **one side arbitrarily**, or worse, **blends** incompatible claims so the answer reads coherent but is **internally inconsistent**. Users trust the voice of authority and may not notice until someone fact-checks externally—creating **reputational risk**.
+
+You need a design that **surfaces disagreement** instead of hiding it: detecting contradiction, preserving provenance, and presenting **confidence and source quality** transparently.
 
 **Interviewer:** Design for source conflict?
 
@@ -746,7 +794,13 @@ else:
 
 ### Scenario 9 — Support bot forgets context after ~20 turns *(SaaS / CX — Medium)*
 
-**Situation:** 5k conversations/day; after ~20 messages bot “forgets”; avg length 35 turns; 16K token limit.
+**Situation**
+
+You run a **customer-support chatbot** embedded in a SaaS product. Traffic is meaningful—on the order of **thousands of conversations per day**. Sessions are not “one-turn FAQ”: users explain billing disputes, migration problems, or flaky integrations across **many messages**; the average conversation length is **~35 turns**.
+
+Engineering chose a **fixed token budget** (~16K tokens) for the model context and implemented the simplest policy: keep only the **most recent messages** and drop the rest. After roughly **20 turns**, early details disappear—**order IDs**, **prior troubleshooting steps**, **promises the bot made**, or **emotional context** (“I already tried that twice”). Customers experience this as **amnesia**: the bot repeats questions or contradicts itself; CSAT drops and human handoffs increase.
+
+The business constraint is you cannot infinitely grow context per ticket; you need a **memory architecture** that preserves **stable facts** and **task state** while still summarizing long chatter.
 
 **Interviewer:** Memory architecture?
 
@@ -786,7 +840,13 @@ class SupportSessionMemory:
 
 ### Scenario 10 — Context cost explosion on long documents *(Enterprise AI — Hard)*
 
-**Situation:** 200-page contracts; 50 chunks (~30K tokens) per query to GPT-4o; **$180K/month** LLM bill; need ~80% cut without killing quality.
+**Situation**
+
+Legal or procurement teams use your assistant to query **very large contracts**—often **hundreds of pages**, dense definitions, schedules, and amendments. The retrieval pipeline is conservative: for each question it pulls **many overlapping chunks** (say **~50 chunks**) to avoid missing a niche clause. Combined prompts routinely reach on the order of **~30K tokens** before the model even answers.
+
+Finance reports **~$180K/month** in LLM spend attributable to this workload alone (flagship model pricing × volume × long prompts). Leadership asks for roughly **~80% cost reduction** **without** turning answers into useless summaries—lawyers will reject the product if citations drift or nuance is lost.
+
+So you must explain **how to shrink retrieved evidence** (reranking, compression), **route cheaper models** where safe, **cache** repeated clause lookups, and measure **quality** while dollars fall.
 
 **Interviewer:** Strategy?
 
@@ -825,7 +885,13 @@ Combined: example trajectory ~**$180K → ~$18K/month** (order-of-magnitude; tun
 
 ### Scenario 11 — RAG quality drops after corpus grows 10× *(Scale-up — Hard)*
 
-**Situation:** 100K docs → RAGAS faithfulness 0.91; at 1M docs same pipeline → 0.74.
+**Situation**
+
+Your team shipped RAG when the knowledge base was **~100k documents**—mostly high-quality, curated manuals and FAQs. Offline **RAGAS faithfulness** looked healthy (**~0.91**). Over the next year, ingestion pipelines sucked in **ten times more content**: old tickets, wikis, scraped pages, partner PDFs, auto-generated exports—much of it **noisy**, **duplicative**, or **tangentially related**.
+
+Users did not change behavior—they still ask the same style of questions—but answers gradually become **less grounded**. Re-running evaluation shows faithfulness fell to **~0.74** **without** any deliberate model swap. PMs assume “the embedding model got worse,” when often the real issue is **neighbor pollution**: irrelevant chunks now sit close in embedding space, so the LLM receives **conflicting or misleading context** and fills gaps by hallucination.
+
+You must diagnose whether this is **retrieval precision**, **index health**, **chunk quality regression**, or **topic drift**—and prioritize fixes that scale with corpus growth.
 
 **Interviewer:** Diagnosis?
 
@@ -844,7 +910,13 @@ Combined: example trajectory ~**$180K → ~$18K/month** (order-of-magnitude; tun
 
 ### Scenario 12 — Personal AI assistant with persistent memory *(AI Product — Senior)*
 
-**Situation:** Assistant remembers everything; learns preferences; **50K turns** over 2 years.
+**Situation**
+
+You product-manage a **consumer personal assistant** marketed as “remembers you across sessions.” Users chat about calendars, travel, health goals, family names, work projects—**tens of thousands of turns** accumulate over **years**. They expect the assistant to **recall preferences** (“you hate morning meetings”) and **facts** (“my kid’s school starts at 8:05”), but also expect **privacy**, **correction**, and **forgetting** when they change their mind.
+
+Technically, stuffing entire chat logs into the prompt forever is impossible. Naïvely embedding every message and retrieving top-*k* hits fails too: retrieval pulls **wrong memories** (similar wording, different intent), and contradictory facts accumulate (**“I’m vegetarian”** vs later **“I started eating fish”**).
+
+Interviewers want a **layered memory design**: what is stored raw vs summarized vs structured, how nightly consolidation works, and how you handle **time**, **confidence**, and **user controls**.
 
 **Interviewer:** Memory architecture?
 
@@ -881,7 +953,13 @@ class PersonalMemorySystem:
 
 ### Scenario 13 — Prompt injection via retrieved documents *(Security — Hard)*
 
-**Situation:** Malicious PDF: hidden text *“IGNORE ALL PREVIOUS INSTRUCTIONS…”*; bot follows via RAG.
+**Situation**
+
+Your enterprise assistant lets employees upload **documents** that become part of the retrieval corpus—ticket exports, vendor PDFs, shared drives. An attacker (or a careless partner) uploads a file that looks like a normal contract but contains **tiny pale text**, **collapsed sections**, or footnotes with adversarial instructions such as *“IGNORE ALL PREVIOUS INSTRUCTIONS…”*.
+
+Because RAG **trusts retrieved text** as “ground truth context,” that poisoned chunk can ride along with legitimate hits. The LLM interprets it as **new marching orders**, leaking data, exfiltrating secrets via hidden URLs, or bypassing safety policies—even though **nobody typed an attack into the chat box**. Security teams classify this as **indirect prompt injection** carried by your **data plane**, not your UI.
+
+You need defenses at **ingest time**, **prompt assembly time**, and **output/tool time**, plus logging that preserves forensic evidence.
 
 **Interviewer:** Defence?
 
@@ -923,6 +1001,14 @@ user = f'{retrieved_text}\n{query}'
 
 ### Scenario 14 — Multi-hop reasoning: agent can't connect dots *(Research / Enterprise — Hard)*
 
+**Situation**
+
+An internal research assistant must answer composite org questions that **no single passage** states outright. Example: *“Who is the manager of the person who approved the Q3 budget for Project Orion?”* One memo lists **who approved the budget** for Orion; another chart describes **reporting lines**—but neither doc repeats the full chain in one paragraph.
+
+Standard **single-query dense retrieval** often retrieves **only one hop**: it finds “budget approver” OR “Org chart snippet,” not both, because the query embedding averages conflicting intents. The LLM therefore guesses or refuses—yet humans solve this quickly by **reading piece A, forming a sub-question, then retrieving piece B**.
+
+Interviewers are listening for **iterative retrieval**, **query rewriting**, **graph-backed traversal**, or **explicit decomposition**—plus limits so the agent does not spiral.
+
 **Question:** *Who is the manager of the person who approved Q3 budget for Project Orion?* Two documents; single-shot RAG fails.
 
 **Interviewer:** Multi-hop strategy?
@@ -955,7 +1041,11 @@ Example Cypher-style approach: match approver for budget, then `REPORTS_TO` mana
 
 ### Scenario 15 — Evaluation pipeline from scratch *(ML Platform — Senior)*
 
-**Situation:** RAG chatbot shipped with **no** eval; 2 weeks to stand up pipeline.
+**Situation**
+
+A product team **launched a customer-facing RAG chatbot** quickly for a demo-driven roadmap. They tracked **latency** and **token spend**, but shipped **without any offline evaluation harness**: no labeled golden set, no retrieval metrics, no regression tests on prompts or chunking changes. Now deals require “ML governance,” an exec readout promises **quality dashboards**, and engineering has **two weeks** before the next release train.
+
+You must stand up something **credible fast**: human-labeled or reviewer-assisted examples, automatic scores where possible (RAGAS-style), CI gates that block obvious regressions, and a bridge to **production monitoring** (logging, sampling, A/B). The interviewer cares about **prioritization**, **cost of labeling**, and **what you measure first** when time is short.
 
 **Interviewer:** Plan?
 
@@ -1002,7 +1092,13 @@ This part adds **new** complex questions with **scenario framing**, **ideal reas
 
 ### Q1 — Scenario: “Compliance officer chat” across jurisdictions
 
-**Scenario:** Global bank needs one assistant answering policy questions across **EU** and **US** docs; answers must **never** blend jurisdictions; audit must prove **which doc version** grounded each sentence.
+**Situation**
+
+A **global bank** (or insurer) runs one internal **GenAI assistant** for tens of thousands of employees: HR policies, trading conduct rules, privacy notices, and breach-playbooks live in different **regions**. Regulatory reality is harsh: **EU** employees must see answers grounded **only** in EU-approved policy packs; **US** staff see US variants—and **mixing** jurisdictions in one answer is not a wording issue, it can be a **regulatory finding**.
+
+Legal expects **audit**: for any sensitive answer, they want to show **exact clause IDs**, **document versions**, and **hashes** that were in context at generation time—not “the model said so.” Users hop between topics quickly and sometimes **travel** or **switch entities**, so a naive chat session could accidentally pull US chunks for an EU question unless **session policy** is explicit.
+
+**Scenario (requirements):** One assistant; corpus spans **EU** and **US** authoritative docs; answers must **never blend** jurisdictions; auditors must prove **which doc version** grounded **each normative sentence**.
 
 **What interviewers probe:** tenancy, retrieval filters, grounding, logging.
 
@@ -1019,7 +1115,13 @@ This part adds **new** complex questions with **scenario framing**, **ideal reas
 
 ### Q2 — Scenario: Real-time vs batch knowledge for same product
 
-**Scenario:** E-commerce Q&A needs **live inventory & price** but **stable** product descriptions and manuals.
+**Situation**
+
+You ship **shopping assistant** Q&A on a large marketplace: “Does this laptop ship to my ZIP?” “Is this SKU in stock?” “What’s the warranty?” Some facts live in **marketing copy and PDF manuals**—they change occasionally and embed well in a **vector index**. Other facts—**price, promotions, inventory, delivery ETA**—change **minute by minute** from **OLTP / catalog services**. If the model reads yesterday’s embedded snippet for “price,” you create **angry customers** and **pricing-compliance** risk.
+
+Product wants **one conversational surface**, not two bots. Engineering wants **clear ownership**: docs vs transactional APIs. Reliability teams worry about **latency** when every answer hits multiple backends.
+
+**Scenario (requirements):** Same assistant must combine **stable** narrative knowledge with **live** inventory and price—without trusting stale chunks for **numbers**.
 
 **Design:** **Hybrid retrieval** — (a) vector index for docs; (b) **structured tools** (`get_sku_price`, `get_inventory`) called **after** intent classification; **never** trust stale chunks for numbers. **Orchestration:** Planner emits DAG — parallel doc retrieval + API fetch → merge in canonical JSON → LLM explains.
 
@@ -1029,6 +1131,14 @@ This part adds **new** complex questions with **scenario framing**, **ideal reas
 
 ### Q3 — Design a “RAG gateway” as an enterprise API product
 
+**Situation**
+
+Your company sells **API access** to “enterprise search + answer,” similar to packaging Pinecone + OpenAI behind **your** controls. Buyers are banks and hospitals: they demand **SSO**, **per-tenant isolation**, **SOC2 evidence**, **immutable audit**, predictable **SLAs**, and **cost caps**. Internal teams also want **feature flags** for experimental rerankers without shipping ten microservices to each customer.
+
+So you are not sketching one chatbot—you are designing the **shared edge** where auth, quotas, routing, safety, and observability **must** live once, while retrieval strategies remain pluggable.
+
+**Scenario (requirements):** Multi-tenant **RAG-as-a-service**: stable external API, strong governance, graceful degradation when vector DB or LLM vendor flakes.
+
 **HLD:** Edge AuthN/Z → **quota/rate** → **query planner** (rewrite, HyDE optional) → **router** (SQL vs vector vs KG) → **retrieval** (hybrid + RRF) → **guardrail** (PII, injection scan on packs) → **rerank** → **packer** (lost-in-the-middle aware ordering) → **LLM** → **post-validator** (citations, numeric grounding) → **audit log**.
 
 **LLD highlights:** Idempotent `request_id`; **streaming** with trace IDs per token phase; **circuit breakers** per downstream (embedder, DB, LLM); **degraded mode** — keyword-only search + template answer when vector path unhealthy.
@@ -1037,7 +1147,13 @@ This part adds **new** complex questions with **scenario framing**, **ideal reas
 
 ### Q4 — Cold start + long-tail queries at scale
 
-**Scenario:** New marketplace; sparse clicks; embeddings weak on rare SKUs.
+**Situation**
+
+You launch a **new marketplace** (or expand into a new category). Search logs are **thin**: most SKUs have almost **no clicks**, reviews are sparse, and query distributions are **heavy-tailed**—“obscure adapter for 2016 appliance model” appears once a month but still needs a correct match. Pure **dense retrieval** trained only on organic behavior **collapses**: embeddings for rare items sit in generic regions of space and lose to popular neighbors.
+
+Growth teams push **fast catalogue ingestion** from sellers with noisy titles; ML wants **quality without waiting six months** for click data. Ops worries about **cold-start sellers** who never surface.
+
+**Scenario (requirements):** Sparse behavioral signals; embeddings weak on **long-tail** SKUs; still need **reasonable retrieval** on day one and a path to **learn** as traffic grows.
 
 **Mitigations:** **Synthetic Q generation** from PDP attributes for training retrieval; **BM25-heavy hybrid** early; **human-in-loop** labels for top failure buckets weekly; **two-tower** or **late interaction** rerankers once traffic exists; **exploration** slot in top-k for new listings.
 
@@ -1047,7 +1163,13 @@ This part adds **new** complex questions with **scenario framing**, **ideal reas
 
 ### Q5 — Layered guardrail architecture (input → tool → output → org)
 
-**Scenario:** Customer support agent can read tickets, issue refunds, update CRM.
+**Situation**
+
+You operate a **customer-support agent** wired into Zendesk-style tickets, order history, and internal CRM. It can **summarize** threads, **draft** replies, but also invoke tools: **issue refunds**, **change subscription tiers**, **grant credits**, **open fraud cases**. Each capability is useful—and each is a **weapon** if the model is jailbroken, prompted indirectly via ticket attachments, or simply **wrong** about eligibility.
+
+Security expects **defense in depth**, not “we wrote a safe system prompt.” Compliance asks **who approved** high-impact actions and whether policy checks are **deterministic** rather than LLM-judged alone.
+
+**Scenario (requirements):** Agent reads sensitive tickets and can **mutate** customer state; design guardrails from **user input** through **tools** to **org controls**.
 
 **Layers**
 
@@ -1065,7 +1187,13 @@ This part adds **new** complex questions with **scenario framing**, **ideal reas
 
 ### Q6 — Red teaming pipeline in CI
 
-**Scenario:** Ship weekly prompt/model changes; prevent regressions on **safety** and **privacy**.
+**Situation**
+
+Your team ships **weekly**: new prompts, retrieval tweaks, occasional **model version** bumps. Product velocity is high; safety reviews cannot be a **manual gate** every time. Yet one bad merge can re-open **prompt injection**, **PII leakage**, or **toxic** outputs—especially after changes to **tool schemas** or **context templates**.
+
+Leadership asks for **proof** that automation catches regressions **before** prod, and **canaries** that roll back when live metrics drift—not heroics from the on-call red-teamer.
+
+**Scenario (requirements):** Frequent prompt/model changes; must block **safety** and **privacy** regressions in CI/CD with measurable thresholds.
 
 **Design:** Curated **attack suite** (injection strings, role escapes, data exfil templates); **LLM-as-judge** + **deterministic** checks; **block merge** if attack success rate &gt; baseline + epsilon; **canary** in prod with automatic rollback on safety KPI drift.
 
@@ -1073,7 +1201,13 @@ This part adds **new** complex questions with **scenario framing**, **ideal reas
 
 ### Q7 — PII handling across RAG and fine-tuning
 
-**Scenario:** Engineers want to fine-tune on support transcripts stored in the vector DB.
+**Situation**
+
+Support transcripts—full of names, addresses, order IDs, sometimes **government IDs**—were ingested into the **vector DB** so the assistant could retrieve similar past tickets. Now ML engineers propose **fine-tuning** on that same corpus to improve tone and resolution quality. Privacy officers panic: **indexes and training exports** multiply copies of sensitive data; **re-identification** risk rises; regions disagree on **lawful basis** and retention.
+
+You must explain how **RAG’s need for readable text** interacts with **training’s need for diverse examples**—and why “dump Redis to S3” is not a policy.
+
+**Scenario (requirements):** Same sensitive transcripts feed **retrieval** and a proposal for **fine-tuning**; need architecture that minimizes raw PII proliferation.
 
 **Answer:** **Detect & mask** at ingest (NER + vault tokens); **store only surrogates** in indexes used for training exports; maintain **reversible mapping** in restricted KMS for narrow ops roles; **never** fine-tune on raw PAN/SSN — use **synthetic** replacement spans verified by privacy review.
 
@@ -1083,17 +1217,33 @@ This part adds **new** complex questions with **scenario framing**, **ideal reas
 
 ### Q8 — HLD: Multi-agent research assistant with external APIs
 
+**Situation**
+
+Users ask open-ended **research tasks**: “Summarize clinical evidence on drug X,” “Build a comparison table from these URLs,” “Draft code that calls our billing API.” One monolithic prompt+browse loop **burns context**, hides failure modes, and makes debugging a **nightmare**. Product wants **specialized behaviors**—planning, retrieval, coding, verification—while platform wants **one orchestrated workflow** with retries, billing, and tracing.
+
+External APIs (search, GitHub, proprietary REST) add **rate limits**, **partial failures**, and **PII** exposure risks. You need an HLD where agents cooperate **without** an infinitely recursive ping-pong.
+
+**Scenario (dynamic behavior):** A **Critic** agent flags an unsupported factual claim; the system must loop **back** to retrieval with a sharper query—but **not forever**.
+
 **Actors:** User → **API Gateway** → **Session orchestrator** → subgraph of agents (**Planner**, **Retriever**, **Coder**, **Critic**).
 
 **State:** Durable workflow store (e.g. event log per `run_id`); checkpoints after each tool batch.
 
 **Cross-cutting:** Feature flags for model/tools; cost budgets per user tier; **dead-letter** queue for failed tool spans.
 
-**Scenario:** Critic flags unsupported claim → loop **back** to Retriever with narrowed query — **bounded** by max revisits and diminishing returns detector.
+**Closing loop:** Critic flags unsupported claim → Retriever gets narrowed query — **bounded** by max revisits and diminishing returns detector.
 
 ---
 
 ### Q9 — HLD: Human-in-the-loop (HITL) escalation graph
+
+**Situation**
+
+Half your agent runs are mundane lookups; the other half touch **money**, **legal commitments**, or **angry VIP customers**. Fully autonomous completion is unacceptable—yet forcing humans on every step destroys ROI. You need **selective escalation**: the agent runs fast until a **predicate** fires (risk, uncertainty, abuse), then **pauses** with enough context that a human can decide in **minutes**, not hours.
+
+Regulators and execs also ask: **what did the human approve**, and can we **replay** it for audits? Exporting raw chain-of-thought is often **wrong** legally and practically.
+
+**Scenario (requirements):** Define **when** to stop, **what packet** the human sees, and **how** execution resumes without silent drift.
 
 **Triggers:** Irreversible tool; confidence &lt; τ; policy engine uncertainty; user frustration signal from CX models.
 
@@ -1105,6 +1255,14 @@ This part adds **new** complex questions with **scenario framing**, **ideal reas
 
 ### Q10 — Fleet of autonomous vs supervised agents
 
+**Situation**
+
+Your org doesn’t have “one agent”—it has **dozens**: onboarding bots, DevOps helpers, sales outreach drafts, internal doc copilots. Some are **read-only**; others propose **writes**; still others run **batch jobs** overnight. Security reviews grind to a halt if every team reinvents OAuth scopes and confirmations differently. Auditors want evidence that **policy is centralized**, not scattered across prompts.
+
+Interview framing: how do you **classify** agents, **roll out** autonomy gradually, and prove **who was allowed** to do **what**?
+
+**Scenario (requirements):** Mixed fleet of agents with different risk profiles; need consistent governance without blocking innovators entirely.
+
 **Taxonomy:** **Read-only** agents (default), **write-capable** with confirmation, **batch** agents with progressive rollout.
 
 **HLD:** Central **policy service** answers “may agent X invoke tool Y under context Z?” — single enforcement point for SOC2 evidence.
@@ -1114,6 +1272,12 @@ This part adds **new** complex questions with **scenario framing**, **ideal reas
 ## III.D — Agentic AI — low-level design (LLD)
 
 ### Q11 — LLD: Tool registry contract
+
+**Situation**
+
+Interviewers shift from boxes-and-arrows to **contracts**: “What exactly does the harness require before `execute()`?” Teams break because tool payloads are **ad hoc strings**, retries **double-charge** customers, or sandbox timeouts leave **zombie** processes. You need a **registry** that is machine-verifiable and aligns with **IAM** scopes.
+
+**Scenario (requirements):** Precisely specify tool metadata and the ordered **harness pipeline** so implementations stay consistent across services.
 
 Each tool exposes:
 
@@ -1125,7 +1289,11 @@ Each tool exposes:
 
 ### Q12 — LLD: Deterministic replay and debugging
 
-**Scenario:** Incident investigation — reproduce agent behaviour.
+**Situation**
+
+Production incident: an agent issued **wrong refunds** or **leaked** partial ticket contents. Postmortem asks: **can we replay** the exact reasoning path? Raw logs show streaming tokens—not helpful. Vendor APIs (**search**, **weather**, **payments**) are **non-deterministic** across days. Without disciplined **event capture**, you cannot answer whether the bug was **model**, **tool**, **prompt**, or **bad data**.
+
+**Scenario (requirements):** Incident investigation needs **reproducible** agent behavior **enough** for engineering—not necessarily bit-identical creativity.
 
 **LLD:** Persist ordered **events**: `{model_snapshot_id, temperature, messages_hash, tool_inputs_hash, tool_outputs_redacted, rng_seed_if_any}`. Replays use **frozen** model version where possible; for non-deterministic APIs, **mock** with recorded stubs in staging.
 
@@ -1133,11 +1301,23 @@ Each tool exposes:
 
 ### Q13 — LLD: Context assembly for long ReAct traces
 
+**Situation**
+
+After fifteen **Thought → Action → Observation** cycles, your context holds megabytes of **logs**, **HTML dumps**, and **JSON**. Costs spike and models **lose** the original user goal—but if you blindly summarize, you drop the **one error line** that explains the bug. Teams ask for **reference-based memory**: keep pointers to blobs, not blobs inline.
+
+**Scenario (requirements):** Long ReAct runs must stay within token budgets while preserving **debuggability** and **goal fidelity**.
+
 **Techniques:** Tool-output **summarisation** with **reference IDs** to full blobs in object storage; **scratchpad compression** task-aware; pin **user goals** and **active constraints**; **retrieve** prior substeps from episodic store instead of inline full history.
 
 ---
 
 ### Q14 — Multi-agent LLD: Message bus vs shared blackboard
+
+**Situation**
+
+You split work across agents (**researcher**, **writer**, **reviewer**). Now they must share intermediate artifacts—snippets, structured facts, critique notes. Two camps emerge: engineers love a **shared blackboard** (fast, simple dict in Redis); platform wants a **message bus** (Kafka/NATS) for ordering, retries, and cross-service boundaries. Tenancy blurs when **Team A’s** agent accidentally reads **Team B’s** scratchpad.
+
+**Scenario (requirements):** Compare coordination mechanisms for **multi-agent state** with production-grade **audit** and **isolation** constraints.
 
 | Pattern | Pros | Cons |
 |---------|------|------|
@@ -1152,6 +1332,12 @@ Each tool exposes:
 
 ### Capstone A — “Autonomous SRE agent” with blast-radius controls
 
+**Situation**
+
+On-call is drowning: paging storms, flaky deploys, noisy alerts. Leadership proposes an **SRE copilot** that reads **metrics**, **logs**, **traces**, and internal **runbooks**, then suggests—or executes—**mitigations** (scale up, rollback feature flag, restart pods). Every ops engineer hears “autonomous” and thinks **production fire**: one bad restart at cluster scope could exceed **every** incident you prevented.
+
+You must articulate **progressive trust**: what the agent may **read**, what it may **propose**, what requires **human + peer**, and how **blast radius** stays bounded.
+
 **Goal:** Diagnose incidents using logs + metrics + runbooks.
 
 **Non-negotiables:** Read-only prod by default; **mutating** runbooks require **two-person rule**; **canary** remediation on single host; **automatic rollback** hooks; full trace exported to incident ticket.
@@ -1162,7 +1348,13 @@ Each tool exposes:
 
 ### Capstone B — Contract negotiation copilot
 
-**RAG over clause library + **diff** tool against counterparty PDF + **policy graph** (“never accept unlimited liability”).  
+**Situation**
+
+Legal teams paste a **counterparty’s redlined PDF** into chat and ask: “Are we exposed on liability caps?” Your copilot must reconcile **your clause library**, **their edits**, and **firm policy** (“never unlimited liability,” jurisdiction quirks). Wrong advice isn’t a bad UX moment—it’s **malpractice risk**. Lawyers insist on **human sign-off** before anything leaves the building, but still want **draft speed**.
+
+**Scenario (requirements):** Combine retrieval over **approved clauses**, structural **diff** against counterparty text, and **policy rules**—without autonomous outbound email.
+
+**Architecture sketch:** RAG over clause library + **diff** tool against counterparty PDF + **policy graph** (“never accept unlimited liability”).  
 
 **Guardrails:** jurisdiction-specific clause packs; **human approval** before sending redlines; **version** counterparty doc snapshots.
 
@@ -1170,13 +1362,25 @@ Each tool exposes:
 
 ### Capstone C — Scientific literature agent with provenance
 
-**HyDE + iterative retrieval + **opposition** agent that searches **contradicting** trials.**  
+**Situation**
+
+Biotech or clinical researchers ask: “What’s the evidence for intervention Y in population Z?” Answers draw from **PubMed**, internal lab notes, and regulatory submissions—sources **conflict**, methodologies differ, and stakes are **patient safety**. A fluent summary that **hides disagreement** is worse than useless.
+
+Interview expectation: show **epistemic humility**—retrieve broadly, **actively seek contradiction**, and surface **evidence strength**, not fake consensus.
+
+**Scenario (requirements):** Iterative retrieval plus an explicit **adversarial** pass; outputs must encode **provenance** and **uncertainty**.
+
+**Mechanisms:** HyDE + iterative retrieval + **opposition** agent that searches **contradicting** trials.  
 
 **Output:** Claim chart with **GRADE-style** certainty labels when sources conflict.
 
 ---
 
 ## III.F — Quick checklist for Agentic HLD/LLD interviews
+
+**Situation**
+
+You’re at the whiteboard endgame: time is short and the interviewer wants **coverage**, not poetry. They’ll ping-pong across **state ownership**, **retries**, **security**, **cost**, and **eval**. The checklist below is a **mental sweep**—use it to avoid forgetting something embarrassing (“no idempotency on payments”) after spending ten minutes on retrieval math.
 
 - **Boundaries:** Who owns state — orchestrator vs agents vs external workflow engine?  
 - **Failure domains:** Partial retries; idempotent tools; compensation sagas for multi-step writes.  

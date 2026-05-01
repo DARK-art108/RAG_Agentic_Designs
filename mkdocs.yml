@@ -7,9 +7,8 @@ edit_uri: ""
 
 theme:
   name: material
+  custom_dir: overrides
   language: en
-  logo: material/book-education
-  favicon: material/library
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -55,13 +54,12 @@ markdown_extensions:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
+      pygments_style: colorful
   - pymdownx.inlinehilite
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.tasklist:
       custom_checkbox: true
-  - pymdownx.critic
-  - pymdownx.caret
   - pymdownx.keys
   - pymdownx.mark
   - pymdownx.emoji:
@@ -72,14 +70,22 @@ markdown_extensions:
   - tables
   - toc:
       permalink: true
-      toc_depth: 3
+      toc_depth: 5
 
 extra_css:
   - stylesheets/extra.css
 
 nav:
   - Home: index.md
-  - Full guide:
-      - Interview guide (all parts): scenarios.md
+  - Table of contents: guide/index.md
+  - Part I — Preparation: guide/part-i.md
+  - Part II — Scenarios:
+      - Overview: guide/part-ii/index.md
+      - "Ch.1 Production incidents": guide/part-ii/chapter-01-production.md
+      - "Ch.2 System design": guide/part-ii/chapter-02-system-design.md
+      - "Ch.3 Agentic AI": guide/part-ii/chapter-03-agentic.md
+      - "Ch.4 Memory & context": guide/part-ii/chapter-04-memory.md
+      - "Ch.5 Advanced + SPAR": guide/part-ii/chapter-05-advanced.md
+  - Part III — HLD / Guardrails: guide/part-iii.md
 
 copyright: Copyright &copy; Ritesh Yadav — Advanced ML / LLM interview preparation
