@@ -169,15 +169,6 @@
   backdrop-filter: saturate(180%) blur(12px);
 }
 
-/* Emoji logo (see overrides/partials/logo.html) */
-.md-logo__emoji {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.85rem;
-  line-height: 1;
-}
-
 /* Hero — home only */
 .doc-hero {
   margin: 0 -0.8rem 2rem;
@@ -279,7 +270,4 @@
     text-align: center;
   }
 
-  .md-logo__emoji {
-    font-size: 1.45rem;
-  }
 }

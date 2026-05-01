@@ -1,4 +1,4 @@
-site_name: RAG & Agentic AI — Interview Guide
+site_name: RAG & Agentic Systems — Master Guide
 site_description: >-
   Advanced RAG, agentic design, and production scenarios for senior ML & LLM engineers.
 site_author: Ritesh Yadav
@@ -7,8 +7,9 @@ edit_uri: ""
 
 theme:
   name: material
-  custom_dir: overrides
   language: en
+  logo: assets/logo.png
+  favicon: assets/favicon.png
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default

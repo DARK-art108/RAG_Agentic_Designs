@@ -5,7 +5,7 @@ hide:
 
 <div class="doc-hero" markdown="1">
 
-# RAG & Agentic AI interview playbook
+# RAG & Agentic Systems Master Guide
 
 **Senior / staff ML & LLM engineering** — latency, chunking, retrieval, agents, harnesses, production incidents, and system design in one place.
 
