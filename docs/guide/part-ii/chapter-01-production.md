@@ -125,6 +125,9 @@ Downstream, wrong numbers could inform **internal models, executive summaries, o
 
 **You:** (1) **Numeric split across chunks** — table header vs values separated. (2) **Interpolation** across quarters in one context. (3) **PDF extraction corruption** — `$2,310` mangled or de-contextualised.
 
+!!! note "Chunking ↔ retrieval ↔ what the LM sees"
+    Split tables across chunk boundaries and each fragment embeds as its **own** vector neighborhood — retrieval may surface **“Revenue”** without **“Q3”** or vice versa. The LM then stitches **partial** evidence like a human filling crossword blanks — classic Part I §2 failure mode (embedding geometry ≠ coherent fiscal row).
+
 **Solution architecture — numerical precision**
 
 - **Table-aware chunking** — `pdfplumber` → structured JSON `{quarter, metric, value, unit}`; embed JSON; LLM sees clean structure.  

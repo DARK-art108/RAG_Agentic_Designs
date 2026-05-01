@@ -15,6 +15,10 @@ Welcome to the structured interview guide. Pages are split so the **left sidebar
 
 Deep dives you will reuse in almost every RAG or agents conversation:
 
+!!! note "Two phrases to reuse everywhere"
+    **Latency:** Always distinguish **wall-clock** (full response / SLA timers) from **user-perceived** latency — with streaming, lead with **TTFT** (time-to-first-token) vs **time-to-last-token** / total decode.  
+    **Chunking:** Always tie **chunk granularity** to **embedding neighborhoods** (which passages become vector neighbors) **and** to **prompt reality** (concatenated tokens the LM reads after pack/rerank — see lost-in-the-middle).
+
 | Section | Topics |
 |---------|--------|
 | §1–2 | Latency instrumentation, caching, streaming, chunking & parent–child |

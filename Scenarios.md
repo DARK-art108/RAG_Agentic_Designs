@@ -20,6 +20,16 @@ This is a Compilation of various complex RAG, Agentic Design, Harness Patterns b
 
 ---
 
+### Interview framing — latency (detail)
+
+**Wall-clock latency** is measured from **request accepted** to **response complete** (e.g. full JSON returned). It drives SLAs, timeouts, queues, and autoscaling. **User-perceived latency**—especially with **streaming**—is often dominated by **time-to-first-token (TTFT)** (first model token to the client): queueing, retrieval, prompt assembly, and prefill matter most; the user may already feel a fast UI while **decode** continues for seconds. In interviews, quote **both**: e.g. TTFT improved sharply while **time-to-last-token** only improved modestly. Define whether dashboards track **first byte**, **first token**, or **full completion**.
+
+### Interview framing — chunking (detail)
+
+**Embedding geometry (retrieval):** chunk size changes how text maps to vectors; **nearest neighbours** are passages whose embeddings sit close to the query in space. **Smaller chunks** → tighter, more specific neighbourhoods (often better precision for atomic facts) but less surrounding text per hit. **Larger chunks** → vaguer centroids, more accidental neighbours, but richer local context. **Bad splits** (mid-table, mid-sentence) produce polluted embeddings and misleading neighbours. **What the model reads** is concatenated tokens after packing/rerank—not “distance in embedding space”—so link chunking to **who gets retrieved** and packing to **attention** (e.g. lost-in-the-middle).
+
+---
+
 ## 1. RAG latency — from 15s down to &lt;1s
 
 This is the most common senior-level RAG question. Interviewers want to see that you can systematically diagnose the bottleneck rather than blindly throwing hardware at it.
@@ -37,6 +47,8 @@ Before optimising anything, measure each stage individually. A typical RAG pipel
 | Document fetch / rerank | 200 ms–3 s | Cross-encoder on 50+ chunks |
 | LLM generation | 2–12 s | Large context, slow model, no streaming |
 | Network / serialisation | 50–300 ms | Non-local DB, JSON over-fetching |
+
+When presenting this breakdown, say **which latency** each stage affects: pre-LLM stages mostly shape **TTFT** once you stream; the LLM row affects **TTFT** (prefill scales with context) and **time-to-last-token** (decode length). Say whether your SLA means **first token** or **full body**.
 
 #### Step 2 — Optimisation playbook
 
@@ -107,6 +119,8 @@ Quote numbers in the interview: *"We cut P95 latency from 15 s to 1.2 s by strea
 
 Chunking is the single biggest lever on RAG quality that most engineers underestimate. The goal is to create chunks that are semantically complete, embedding-friendly, and LLM-context-efficient.
 
+**Why chunk size matters (tie-together):** it fixes **which vectors sit next to which query** in embedding space *and* **how much coherent text** lands in the LM prompt after retrieval. **Parent–child** separates “small vector for search” from “large span for reading.”
+
 | Strategy | Best for | Chunk size | Overlap | Gotcha |
 |----------|-----------|------------|---------|--------|
 | Fixed-size (chars) | Baseline, logs | 512–1024 chars | 10–20% | Breaks mid-sentence |
@@ -139,7 +153,7 @@ context = [fetch_parent(r.parent_id) for r in results]
 
 The optimal size depends on your query distribution; run ablation experiments with RAGAS metrics (faithfulness, context relevancy).
 
-**For interviews:** propose A/B testing chunk sizes using RAGAS offline evaluation before shipping.
+**For interviews:** propose A/B testing chunk sizes using RAGAS offline evaluation before shipping — and argue how each candidate shifts **embedding neighbourhoods** and **final prompt tokens**.
 
 ---
 
@@ -363,6 +377,8 @@ Multi-agent systems decompose complex tasks across specialised agents. Three coo
 | Latency P95 | End-to-end response time | Prometheus | &lt; 2 s |
 | Cost per query | LLM + embedding + DB | Custom | &lt; $0.01 |
 
+Clarify **which latency** each dashboard tracks: **TTFT** (streaming UX), **full completion** wall-clock, or **retrieval-only** — mixing definitions makes SLAs meaningless.
+
 **RAGAS** is the standard framework. Mention building an **offline golden dataset** (100–500 Q&A pairs) and **regression tests** on every pipeline change.
 
 ---
@@ -376,7 +392,8 @@ Multi-agent systems decompose complex tasks across specialised agents. Three coo
 → **IVF-Flat:** partition corpus into Voronoi cells, probe top-N cells — fast but fixed at index time. **HNSW:** hierarchical graph, dynamic, excellent recall, high memory. **FAISS IVF-PQ:** partitioning + compression — high throughput at billions of vectors.
 
 **Q3: What is lost-in-the-middle?**  
-→ LLMs under-attend to content in the **middle** of long contexts. Fix: place most relevant chunks at **start and end** of the packed context.
+→ LLMs under-attend to content in the **middle** of long contexts. Fix: place most relevant chunks at **start and end** of the packed context.  
+→ **Link to chunking:** retrieval geometry got passages into top-*k*; **packing order** shapes LM **attention** over those tokens — same chunks, wrong order → weaker grounding.
 
 **Q4: What is a router in RAG?**  
 → Classifier routing queries to vector DB, SQL, API, or direct LLM answer (LLM tool-call or lightweight classifier like BERT).
@@ -399,13 +416,13 @@ Multi-agent systems decompose complex tasks across specialised agents. Three coo
 
 | Topic | Key numbers / facts |
 |-------|---------------------|
-| Chunk size (general) | 512 tokens; overlap 10% |
+| Chunk size (general) | 512 tokens; overlap 10% — trades embedding specificity vs context breadth |
 | Parent–child chunks | Child: 128 t / Parent: 1024 t |
 | HNSW params | M=16, ef_construct=200, ef_search=50–100 |
 | RRF constant | k=60 |
 | Compaction trigger | 75–80% of context limit |
 | RAGAS faithfulness target | &gt; 0.90 |
-| Latency budget (P95) | &lt; 2 s with streaming |
+| Latency budget (P95) | &lt; 2 s with streaming — quote **TTFT** separately from **full completion** |
 | ReAct max steps | 10–20 (add budget_forced_halt) |
 | Embedding models | text-embedding-3-small (1536d), BGE-M3, E5-Large |
 | Vector DBs | Qdrant (self-host), Pinecone (managed), Weaviate, pgvector |
@@ -551,6 +568,8 @@ Downstream, wrong numbers could inform **internal models, executive summaries, o
 
 **You:** (1) **Numeric split across chunks** — table header vs values separated. (2) **Interpolation** across quarters in one context. (3) **PDF extraction corruption** — `$2,310` mangled or de-contextualised.
 
+**Chunking angle:** split fiscal tables across chunk boundaries and each shard embeds in its **own** neighbourhood — retrieval may return headers without values or vice versa; the LM composes numbers across **partial** context (Part I chunking framing).
+
 **Solution architecture — numerical precision**
 
 - **Table-aware chunking** — `pdfplumber` → structured JSON `{quarter, metric, value, unit}`; embed JSON; LLM sees clean structure.  
@@ -595,11 +614,13 @@ This scenario forces you to **negotiate reality**: pure “retrieve 50 chunks + 
 
 **You:** **Latency first** — 100 ms P99 is extremely tight for full RAG; rules out sync cross-encoder on hot path; demands aggressive caching and slim generation.
 
+**Wall-clock SLA vs TTFT:** consumer “100 ms” often cannot mean “full answer rendered.” Negotiate **first byte / first token** vs **complete response**; streaming improves **perceived** latency via **TTFT** while heavier work finishes afterward (same framing as Part I §1).
+
 **Ingestion pipeline (real-time)**
 
 ```
 Document Update → Kafka (doc_updates) → Flink/Spark Streaming
-  → chunking (semantic, 512t) → embedding (batched, GPU) → Qdrant upsert (sharded by namespace)
+  → chunking (semantic, 512t — trades embedding specificity vs tokens per chunk) → embedding (batched, GPU) → Qdrant upsert (sharded by namespace)
 Lag target: &lt; 30 s doc-to-searchable
 ```
 
@@ -897,6 +918,8 @@ You must diagnose whether this is **retrieval precision**, **index health**, **c
 
 **You:** **Corpus pollution** — more plausible-but-wrong chunks in top-k; precision drops even if recall OK; model sees noise and confabulates.
 
+**Embedding geometry:** bad chunks still occupy volume in vector space — their embeddings crowd **near** common queries, displacing better evidence (same lesson as Part I §2 on neighbourhoods).
+
 **Checks & fixes**
 
 | Cause | Fix |
@@ -1141,7 +1164,7 @@ So you are not sketching one chatbot—you are designing the **shared edge** whe
 
 **HLD:** Edge AuthN/Z → **quota/rate** → **query planner** (rewrite, HyDE optional) → **router** (SQL vs vector vs KG) → **retrieval** (hybrid + RRF) → **guardrail** (PII, injection scan on packs) → **rerank** → **packer** (lost-in-the-middle aware ordering) → **LLM** → **post-validator** (citations, numeric grounding) → **audit log**.
 
-**LLD highlights:** Idempotent `request_id`; **streaming** with trace IDs per token phase; **circuit breakers** per downstream (embedder, DB, LLM); **degraded mode** — keyword-only search + template answer when vector path unhealthy.
+**LLD highlights:** Idempotent `request_id`; **streaming** with trace IDs per token phase (instrument **TTFT** vs **time-to-last-token** for SLAs); **circuit breakers** per downstream (embedder, DB, LLM); **degraded mode** — keyword-only search + template answer when vector path unhealthy.
 
 ---
 
@@ -1156,6 +1179,8 @@ Growth teams push **fast catalogue ingestion** from sellers with noisy titles; M
 **Scenario (requirements):** Sparse behavioral signals; embeddings weak on **long-tail** SKUs; still need **reasonable retrieval** on day one and a path to **learn** as traffic grows.
 
 **Mitigations:** **Synthetic Q generation** from PDP attributes for training retrieval; **BM25-heavy hybrid** early; **human-in-loop** labels for top failure buckets weekly; **two-tower** or **late interaction** rerankers once traffic exists; **exploration** slot in top-k for new listings.
+
+Pair mitigations with **chunk/copy design**: canonical structured attributes in chunks reduce noisy-title dominance in embeddings (Part I §2).
 
 ---
 

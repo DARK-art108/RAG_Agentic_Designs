@@ -63,7 +63,7 @@ So you are not sketching one chatbot—you are designing the **shared edge** whe
 
 **HLD:** Edge AuthN/Z → **quota/rate** → **query planner** (rewrite, HyDE optional) → **router** (SQL vs vector vs KG) → **retrieval** (hybrid + RRF) → **guardrail** (PII, injection scan on packs) → **rerank** → **packer** (lost-in-the-middle aware ordering) → **LLM** → **post-validator** (citations, numeric grounding) → **audit log**.
 
-**LLD highlights:** Idempotent `request_id`; **streaming** with trace IDs per token phase; **circuit breakers** per downstream (embedder, DB, LLM); **degraded mode** — keyword-only search + template answer when vector path unhealthy.
+**LLD highlights:** Idempotent `request_id`; **streaming** with trace IDs per token phase (instrument **TTFT** separately from **time-to-last-token** for honest SLAs); **circuit breakers** per downstream (embedder, DB, LLM); **degraded mode** — keyword-only search + template answer when vector path unhealthy.
 
 ---
 
@@ -78,6 +78,8 @@ Growth teams push **fast catalogue ingestion** from sellers with noisy titles; M
 **Scenario (requirements):** Sparse behavioral signals; embeddings weak on **long-tail** SKUs; still need **reasonable retrieval** on day one and a path to **learn** as traffic grows.
 
 **Mitigations:** **Synthetic Q generation** from PDP attributes for training retrieval; **BM25-heavy hybrid** early; **human-in-loop** labels for top failure buckets weekly; **two-tower** or **late interaction** rerankers once traffic exists; **exploration** slot in top-k for new listings.
+
+Pair mitigations with **chunk/copy choices**: noisy titles need **clean canonical attributes** in chunks so embeddings aren’t dominated by seller spam — same **embedding geometry / chunk content** lesson as Part I §2.
 
 ---
 

@@ -17,6 +17,9 @@ You must diagnose whether this is **retrieval precision**, **index health**, **c
 
 **You:** **Corpus pollution** — more plausible-but-wrong chunks in top-k; precision drops even if recall OK; model sees noise and confabulates.
 
+!!! note "Embedding geometry angle"
+    Junk chunks still occupy **volume** in embedding space: their vectors sit **near** queries they partially match, crowding out better evidence in top-*k*. This is the same **chunk size / boundary / noise** lesson as Part I §2 — retrieval neighborhood quality degraded even if the embedder weights never changed.
+
 **Checks & fixes**
 
 | Cause | Fix |

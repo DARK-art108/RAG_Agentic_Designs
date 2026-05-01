@@ -19,11 +19,14 @@ This scenario forces you to **negotiate reality**: pure “retrieve 50 chunks + 
 
 **You:** **Latency first** — 100 ms P99 is extremely tight for full RAG; rules out sync cross-encoder on hot path; demands aggressive caching and slim generation.
 
+!!! note "Wall-clock SLA vs TTFT (tie-in)"
+    A consumer SLA saying “100 ms” rarely means “full answer rendered.” In practice you often **negotiate phases**: **TTFT** after minimal retrieval + mini-model stub or streamed prefix, while **complete** answer or heavy retrieval finishes later — or you redefine SLA as **cached path only**. Say explicitly whether the SLA is **first byte**, **first model token**, or **full completion**; mixing these invalidates the architecture discussion (same idea as Part I §1).
+
 **Ingestion pipeline (real-time)**
 
 ```
 Document Update → Kafka (doc_updates) → Flink/Spark Streaming
-  → chunking (semantic, 512t) → embedding (batched, GPU) → Qdrant upsert (sharded by namespace)
+  → chunking (semantic, 512t — trades embedding specificity vs context size per chunk) → embedding (batched, GPU) → Qdrant upsert (sharded by namespace)
 Lag target: < 30 s doc-to-searchable
 ```
 

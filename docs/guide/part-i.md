@@ -6,13 +6,23 @@
     Treat this part as your **technical phrasebook**: each section gives you definitions, trade-offs, and numbers you can say aloud in interviews. You do **not** need to memorize every bullet — you need to know **where bottlenecks hide** (embed → ANN → rerank → LLM), **when** to use hybrid retrieval vs agents, and **which metrics** (RAGAS, latency percentiles) prove improvement.
 
 !!! tip "What interviewers listen for"
-    When you answer latency questions, always separate **measured wall-clock** from **user-perceived** latency (streaming / TTFT). When you answer chunking questions, connect **chunk size** to **embedding geometry** and **what the model actually reads**.
+    **Latency answers:** split **wall-clock** (total request time) from **perceived** latency — especially **TTFT** when you stream tokens (see the detailed note under §1).  
+    **Chunking answers:** tie **chunk size** to **embedding neighborhoods** (who becomes a “near neighbor” in vector space) and separately to **prompt tokens** (what the LM actually attends over). See the detailed note under §2.
 
 ---
 
 ## 1. RAG latency — from 15s down to <1s
 
 This is the most common senior-level RAG question. Interviewers want to see that you can systematically diagnose the bottleneck rather than blindly throwing hardware at it.
+
+!!! note "Wall-clock latency vs user-perceived latency (detail)"
+    **Wall-clock latency** is what you measure with a stopwatch from **request accepted** to **response complete** — for a non-streaming HTTP call, often “time until the full JSON body is returned.” It drives **timeouts**, **SLA dashboards**, **queue backlog**, and **autoscaling** decisions. If retrieval + rerank + generation adds up to 12 seconds wall-clock, your gateway and client **feel** all 12 seconds unless you redesign the UX.
+
+    **User-perceived latency** is what humans notice first. With **streaming**, the critical metric is usually **time-to-first-token (TTFT)** — how long until the **first** model token is flushed to the client (SSE/WebSocket). TTFT is dominated by **queueing**, **retrieval path**, **prompt assembly**, and **prefill** cost — not by generating the full answer. You might still spend several seconds generating tokens **after** TTFT, but the interface already feels responsive.
+
+    **Why both matter in interviews:** You can say *“We improved perceived latency by enabling streaming — TTFT dropped from ~9 s to ~600 ms — while wall-clock to **complete** the answer only fell from 14 s to 11 s because total decode length stayed similar.”* That shows you won’t confuse **dashboard P95** with **UX**.
+
+    **Common nuance:** Warm-cache hits may show **great** wall-clock but TTFT still spikes on cold embedder/LLM routing; conversely, streaming hides slow **tail** generation unless you measure **time-to-last-token** separately for completeness/cost.
 
 !!! note "Plain-language framing"
     Think of the pipeline as a chain of queues: every stage adds delay **and** shapes what the model believes is true. Fixing latency without touching retrieval quality is useless; fixing retrieval without measuring LLM token cost is incomplete.
@@ -30,6 +40,8 @@ Before optimising anything, measure each stage individually. A typical RAG pipel
 | Document fetch / rerank | 200 ms–3 s | Cross-encoder on 50+ chunks |
 | LLM generation | 2–12 s | Large context, slow model, no streaming |
 | Network / serialisation | 50–300 ms | Non-local DB, JSON over-fetching |
+
+When you present this table in an interview, say **which metric** each row affects: rows above the LLM mostly influence **TTFT** once you stream; the LLM row affects **TTFT** (prefill ∝ context tokens) **and** **time-to-last-token** (decode length). Wall-clock SLA reports should say whether they mean **first byte**, **full body**, or **last token**.
 
 #### Step 2 — Optimisation playbook
 
@@ -100,6 +112,18 @@ Quote numbers in the interview: *"We cut P95 latency from 15 s to 1.2 s by strea
 
 Chunking is the single biggest lever on RAG quality that most engineers underestimate. The goal is to create chunks that are semantically complete, embedding-friendly, and LLM-context-efficient.
 
+!!! note "Chunk size ↔ embedding geometry ↔ what the model reads (detail)"
+    **Embedding geometry (retrieval):** A chunk is embedded as one (or a pooled few) vectors in a high-dimensional space. **Nearest-neighbour search** returns chunks whose vectors sit in the **same semantic neighborhoods** as the query vector. **Chunk size** changes that geometry:
+
+    - **Smaller chunks** tend to produce **tighter, more specific** embedding representations for narrow facts (“clause X in section 2”) — you often get **higher precision** in top-*k* for pinpoint questions, but each hit carries **less surrounding language**, so the LM may lack discourse context unless you fetch neighbors or parent spans.
+    - **Larger chunks** average more themes into one vector — they can improve **recall** for broad questions (“summarise the vendor obligations”) but pull in **extra irrelevant sentences**, increasing **neighbor collisions** (many plausible-but-wrong passages sit equally close).
+
+    **Boundary effects:** Cutting mid-sentence, mid-table, or mid-function yields chunks whose embedding is **polluted** — the vector may sit between topics, so retrieval returns **misleading** neighbors even when “semantic search” is working as designed.
+
+    **What the model actually reads:** Retrieval picks IDs in embedding space; **the LM never sees “geometry”** — it sees **concatenated text tokens** (subject to packing order, truncation, and lost-in-the-middle effects). So your interview story needs **two links**: (1) chunking → **who gets retrieved**; (2) packing/reranking → **what tokens fill the context window** and how attentions allocate across them.
+
+    **Parent–child** is the usual pattern to separate concerns: **small child** for precise neighborhoods, **large parent** for coherent text the model reads.
+
 | Strategy | Best for | Chunk size | Overlap | Gotcha |
 |----------|-----------|------------|---------|--------|
 | Fixed-size (chars) | Baseline, logs | 512–1024 chars | 10–20% | Breaks mid-sentence |
@@ -132,7 +156,7 @@ context = [fetch_parent(r.parent_id) for r in results]
 
 The optimal size depends on your query distribution; run ablation experiments with RAGAS metrics (faithfulness, context relevancy).
 
-**For interviews:** propose A/B testing chunk sizes using RAGAS offline evaluation before shipping.
+**For interviews:** propose A/B testing chunk sizes using RAGAS offline evaluation before shipping — and explicitly argue **why** a chosen size shifts **embedding neighborhoods** and **how much text** the LM finally attends over after rerank/pack.
 
 ---
 
@@ -356,6 +380,8 @@ Multi-agent systems decompose complex tasks across specialised agents. Three coo
 | Latency P95 | End-to-end response time | Prometheus | < 2 s |
 | Cost per query | LLM + embedding + DB | Custom | < $0.01 |
 
+Clarify **which latency** each dashboard tracks: **TTFT** (first token, streaming UX), **full completion** wall-clock, or **retrieval-only** — mixing definitions across teams makes SLAs meaningless.
+
 **RAGAS** is the standard framework. Mention building an **offline golden dataset** (100–500 Q&A pairs) and **regression tests** on every pipeline change.
 
 ---
@@ -369,7 +395,8 @@ Multi-agent systems decompose complex tasks across specialised agents. Three coo
 → **IVF-Flat:** partition corpus into Voronoi cells, probe top-N cells — fast but fixed at index time. **HNSW:** hierarchical graph, dynamic, excellent recall, high memory. **FAISS IVF-PQ:** partitioning + compression — high throughput at billions of vectors.
 
 **Q3: What is lost-in-the-middle?**  
-→ LLMs under-attend to content in the **middle** of long contexts. Fix: place most relevant chunks at **start and end** of the packed context.
+→ LLMs under-attend to content in the **middle** of long contexts. Fix: place most relevant chunks at **start and end** of the packed context.  
+→ **Link to chunking:** retrieval geometry got the passages **into** top-*k*; **packing order** decides **attention geometry** inside the LM — same chunks, wrong order → weaker grounding.
 
 **Q4: What is a router in RAG?**  
 → Classifier routing queries to vector DB, SQL, API, or direct LLM answer (LLM tool-call or lightweight classifier like BERT).
@@ -392,13 +419,13 @@ Multi-agent systems decompose complex tasks across specialised agents. Three coo
 
 | Topic | Key numbers / facts |
 |-------|---------------------|
-| Chunk size (general) | 512 tokens; overlap 10% |
+| Chunk size (general) | 512 tokens; overlap 10% — trades embedding specificity vs context breadth |
 | Parent–child chunks | Child: 128 t / Parent: 1024 t |
 | HNSW params | M=16, ef_construct=200, ef_search=50–100 |
 | RRF constant | k=60 |
 | Compaction trigger | 75–80% of context limit |
 | RAGAS faithfulness target | > 0.90 |
-| Latency budget (P95) | < 2 s with streaming |
+| Latency budget (P95) | < 2 s with streaming — quote **TTFT** separately from **full completion** |
 | ReAct max steps | 10–20 (add budget_forced_halt) |
 | Embedding models | text-embedding-3-small (1536d), BGE-M3, E5-Large |
 | Vector DBs | Qdrant (self-host), Pinecone (managed), Weaviate, pgvector |

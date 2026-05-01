@@ -7,6 +7,8 @@
 !!! abstract "What makes a strong answer"
     Interviewers are not checking trivia — they want **structured reasoning**: name what broke (**situation**), cite the missing invariant (**principle**), propose concrete systems (**action**: metadata schemas, filters, harness gates), and close with **resilience** (evals, CI gates, monitoring). The **[SPAR framework](chapter-05-advanced.md#interview-answer-framework-spar)** at the end of Chapter 5 is the recap checklist.
 
+    Cross-cutting reminders from Part I: **latency** stories should separate **wall-clock** vs **TTFT/streaming**; **retrieval** failures often trace to **chunk granularity** and **embedding neighborhoods**, not only “bad embeddings.”
+
 ---
 
 ## Why scenarios are grouped this way

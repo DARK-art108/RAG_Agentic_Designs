@@ -9,6 +9,10 @@ hide:
 
 **Senior / staff ML & LLM engineering** — latency, chunking, retrieval, agents, harnesses, production incidents, and system design in one place.
 
+!!! tip "How to sound senior on latency & chunks"
+    **Latency:** Separate **wall-clock** (total request time / SLAs) from **perceived** UX — with streaming, cite **TTFT** vs full **decode** explicitly (see [Part I §1](guide/part-i.md#1-rag-latency-from-15s-down-to-1s)).  
+    **Chunking:** Link **chunk size** to **embedding space neighborhoods** (retrieval) and to **what tokens the model actually reads** after packing (see [Part I §2](guide/part-i.md#2-chunking-strategies)).
+
 Compiled by **Ritesh Yadav**.
 
 [:octicons-arrow-right-24: Table of contents & full map](guide/index.md){ .md-button .md-button--primary }
